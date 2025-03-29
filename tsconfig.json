@@ -1,0 +1,26 @@
+{
+    "compilerOptions": {
+      "typeRoots": ["./node_modules/@types", "./types"],
+      "target": "ES2022",
+      "moduleResolution": "node",
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true,
+      "module": "CommonJS",
+      "rootDir": "./",
+      "outDir": "./dist",
+      "esModuleInterop": true,
+      "forceConsistentCasingInFileNames": true,
+      "strict": true,
+      "strictFunctionTypes": true,
+      "strictBindCallApply": true,
+      "resolveJsonModule": true, 
+      "noImplicitThis": true,
+      "alwaysStrict": false, // true
+      "noEmit": false,
+      "noFallthroughCasesInSwitch": true,
+      "skipDefaultLibCheck": true,
+      "skipLibCheck": true,
+    },
+    "include": ["src/**/*.ts", "index.ts"],
+    "exclude": ["node_modules"],
+}
