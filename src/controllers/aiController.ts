@@ -2,7 +2,7 @@ import { NextFunction, Request, Response, } from '../types';
 
 import { aiProvidersModels } from '../constants';
 
-import { createPrompt, getAllPrompts, sendAiRequestToProvider, verifyOwnerOnPrompt, verifyPromptExist } from '../services/aiService';
+import { createPrompt, getAllMessagesByPromptId, getAllPrompts, sendAiRequestToProvider, verifyOwnerOnPrompt, verifyPromptExist } from '../services/aiService';
 
 import { mapModelToProviderConfig } from '../utils';
 
@@ -81,3 +81,27 @@ export const getAllUserPrompts = async (req: Request, res: Response, next: NextF
         next(error);
     }
 };
+
+
+export const getPromptMessagesById = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const promptId = req.params.promptId;
+        const promptData = await verifyPromptExist(promptId);
+        if (!promptData) {
+            res.status(400).json({ message: 'Prompt doesn\'t exit!' });
+            return;
+        }
+
+        const isOwnerOnPrompt = await verifyOwnerOnPrompt(promptId, req?.user?.userId ?? '');
+        if (!isOwnerOnPrompt) {
+            res.status(400).json({ message: 'You are not a owner' })
+            return;
+        }
+
+        const result = await getAllMessagesByPromptId(promptId, req.query);
+
+        res.status(200).json(result);
+    } catch (error) {
+        next(error);
+    }
+}

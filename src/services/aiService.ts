@@ -2,10 +2,11 @@ import { Request } from 'express';
 
 import { openAI, anthropicAI } from '../providersServices';
 
-import { IMessageType, ISendRequestConfig, TProviders } from '../types';
+import { IMessageType, IQueryParser, ISendRequestConfig, TProviders } from '../types';
 
 import db from '../models';
 import { IMessageAttributes, IPromptMessageAttributes, IUserPromptAttributes, IPromptAttributes } from '../models/models.interface';
+import { pageParser } from '../helpers';
 
 const PROVIDERS: TProviders = {
     'anthropic': anthropicAI,
@@ -21,22 +22,34 @@ const PROMPT_ROLE = {
 interface IMessageResponse extends IPromptMessageAttributes {
     Message: IMessageAttributes;
 }
+const getPromptMessages = async (promptId: string, query?: IQueryParser) => {
+    const { ordering, offset, limit } = pageParser(query);
+
+    const result: IMessageResponse[] = await db.PromptMessage.findAll({
+        where: { promptId },
+        include: [
+            {
+                model: db.Message,
+                // attributes: ['id'],
+                require: false,
+            }
+        ],
+        order: [['id', ordering]],
+        offset,
+        limit,
+        raw: true,
+        nest: true,
+    });
+    return result;
+}
+
+
 export const sendAiRequestToProvider = async (data: ISendRequestConfig, body: Request['body']) => {
     try {
         const { message: content, promptId } = body;
 
-        const promptsByPromptId: IMessageResponse[] = await db.PromptMessage.findAll({
-            where: { promptId },
-            include: [
-                {
-                    model: db.Message,
-                    // attributes: ['id'],
-                    require: false,
-                }
-            ],
-            raw: true,
-            nest: true,
-        })
+        const promptsByPromptId = await getPromptMessages(promptId);
+
         const userOldMessages = promptsByPromptId.map((mss) => {
             return {
                 content: mss?.Message?.content,
@@ -125,3 +138,16 @@ export const verifyOwnerOnPrompt = async (promptId: string, userId: string) => {
     });
     return result;
 }
+
+export const getAllMessagesByPromptId = async (promptId: string, query?: IQueryParser) => {
+    const result = await getPromptMessages(promptId, query);
+
+    const mappedMessages = result.map(mss => {
+        return {
+            content: mss.Message.content,
+            id: mss.Message.id
+        }
+    });
+
+    return mappedMessages;
+};
