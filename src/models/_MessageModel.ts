@@ -21,7 +21,7 @@ export const MessageFactory = (sequelize: Sequelize): typeof Message => {
             autoIncrement: true,
         },
         content: {
-            type: DataTypes.STRING,
+            type: DataTypes.TEXT,
             allowNull: false,
         },
         role: {
