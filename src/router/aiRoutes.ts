@@ -1,6 +1,6 @@
 import { Router, } from 'express';
 
-import { sendRequest, getAiModels, createUserPrompt, getAllUserPrompts } from '../controllers/aiController';
+import { sendRequest, getAiModels, createUserPrompt, getAllUserPrompts, getPromptMessagesById } from '../controllers/aiController';
 
 const ai = Router();
 
@@ -12,12 +12,17 @@ ai.post('/request',
     sendRequest,
 );
 
-ai.post('/createPrompt',
+ai.post('/prompt',
     createUserPrompt,
 );
 
-ai.get('/getPrompts/:userId',
+//
+ai.get('/prompts/:userId',
     getAllUserPrompts,
+);
+
+ai.get('/promptMessages/:promptId',
+    getPromptMessagesById,
 );
 
 export default ai;
