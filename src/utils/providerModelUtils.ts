@@ -3,7 +3,7 @@ import { aiProvidersModels } from "../constants";
 import { ISendRequestConfig, TAiModels, TProvidersModels } from "../types";
 
 
-const DEFAULT_MAX_TOKENS = 20;
+const DEFAULT_MAX_TOKENS = 1500;
 
 export const _mapModelToProviderConfig = (model: TAiModels, tokens?: number) => {
     const config: Partial<ISendRequestConfig> = {

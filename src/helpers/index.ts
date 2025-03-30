@@ -1,0 +1,1 @@
+export { _pageParser as pageParser } from './queryParser';
