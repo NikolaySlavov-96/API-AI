@@ -18,15 +18,6 @@ const PROMPT_ROLE = {
     USER: 'user',
 };
 
-export const verifyPromptExist = async (promptId: string) => {
-    const promptData = await db.Prompt.findOne({
-        where: { id: promptId, isDeleted: false },
-        raw: true,
-        nest: true,
-    });
-    return promptData;
-};
-
 interface IMessageResponse extends IPromptMessageAttributes {
     Message: IMessageAttributes;
 }
@@ -100,12 +91,13 @@ interface IAllPrompts extends IUserPromptAttributes {
 }
 export const getAllPrompts = async (userId: string) => {
     const result: IAllPrompts[] = await db.UserPrompt.findAll({
-        where: { userId, isDeleted: false, isEnabled: true },
+        where: { userId },
         include: [
             {
                 model: db.Prompt,
                 attributes: ['id', 'name'],
                 require: false,
+                where: { isDeleted: false, isVisible: true }
             }
         ],
         raw: true,
@@ -114,6 +106,15 @@ export const getAllPrompts = async (userId: string) => {
 
     const filterResult = result.map(pr => pr.Prompt);
     return filterResult;
+};
+
+export const verifyPromptExist = async (promptId: string) => {
+    const promptData = await db.Prompt.findOne({
+        where: { id: promptId, isDeleted: false },
+        raw: true,
+        nest: true,
+    });
+    return promptData;
 };
 
 export const verifyOwnerOnPrompt = async (promptId: string, userId: string) => {
