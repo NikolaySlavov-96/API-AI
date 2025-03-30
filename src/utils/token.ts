@@ -4,18 +4,17 @@ import { JwtPayload, sign, SignOptions, VerifyOptions, verify, } from 'jsonwebto
 
 const { tokenSigningKey, tokenIssuer, tokenAudience } = process.env;
 
-const verifyOption: VerifyOptions = {
-    algorithms: ['HS512'],
-    // issuer: tokenIssuer,
-    // audience: tokenAudience,
-};
+// const verifyOption: VerifyOptions = {
+//     algorithms: ['HS512'],
+//     issuer: tokenIssuer,
+//     audience: tokenAudience,
+// };
 
 const jwtVerify = (token: string) => {
     if (!tokenSigningKey) {
         throw new Error('Invalid data!');
     }
-    const payload = verify(token, tokenSigningKey, verifyOption);
-    return { userId: '2' }
+    return verify(token, tokenSigningKey);
 };
 
 const signOption: SignOptions = {
@@ -29,7 +28,7 @@ const jwtSign = (payload: string, expires?: string) => {
         throw new Error('Invalid data!');
     }
     // expires && (option.expiresIn = expires);
-    return sign(payload, tokenSigningKey, signOption);
+    return sign(payload, tokenSigningKey);
 };
 
 // Custom verifyDotNetToken
@@ -60,21 +59,11 @@ export const _verifyToken = (token: string, isPrivate: boolean): { userId: strin
     if (!isPrivate) {
         return verifyCustomDotNetTokenHS512(token);
     }
-    return jwtVerify(token);
+    const verifyToken = jwtVerify(token);
+    return { userId: verifyToken.toString() }
 };
 
-export const _createToken = (data: any, expire?: string) => {
-    const payload: any = {
-        _id: data.id,
-        email: data.email,
-        year: data.year,
-        isVerify: data.isVerify,
-        role: data.role,
-    };
-
-    const accessToken = jwtSign(payload, expire);
-    return {
-        ...payload,
-        accessToken: accessToken,
-    };
+export const _createToken = (data: string, expire?: string) => {
+    const accessToken = jwtSign(data, expire);
+    return accessToken;
 };
