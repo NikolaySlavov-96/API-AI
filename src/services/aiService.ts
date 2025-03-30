@@ -48,7 +48,7 @@ export const sendAiRequestToProvider = async (data: ISendRequestConfig, body: Re
     try {
         const { message: content, promptId } = body;
 
-        const promptsByPromptId = await getPromptMessages(promptId);
+        const promptsByPromptId = await getPromptMessages(promptId, { limit: '2' });
 
         const userOldMessages = promptsByPromptId.map((mss) => {
             return {
