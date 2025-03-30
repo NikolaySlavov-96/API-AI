@@ -2,6 +2,9 @@
 export interface IPromptAttributes {
     id: number;
     name: string;
+    promptModel: string;
+    isVisible: boolean;
+    isDeleted: boolean;
 };
 
 export interface IUserAttributes {

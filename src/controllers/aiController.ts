@@ -1,9 +1,10 @@
-import { NextFunction, Request, Response } from 'express';
+import { NextFunction, Request, Response, } from '../types';
 
 import { aiProvidersModels } from '../constants';
 
-import { createPrompt, getAllPrompts, sendAiRequestToProvider, verifyPromptExist } from '../services/aiService';
-import { ISendRequestConfig, TProvidersModels } from '../types';
+import { createPrompt, getAllPrompts, sendAiRequestToProvider, verifyOwnerOnPrompt, verifyPromptExist } from '../services/aiService';
+
+import { mapModelToProviderConfig } from '../utils';
 
 const DEFAULT_MAX_TOKENS = 20;
 // Anthropic 1024
@@ -19,35 +20,28 @@ export const getAiModels = (req: Request, res: Response, next: NextFunction) => 
 
 export const sendRequest = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const isPromptExits = await verifyPromptExist(req.body.promptId);
-        if (!isPromptExits) {
-            res.status(400).json({ message: 'sss' });
+        const promptId = req.body.promptId;
+        const promptData = await verifyPromptExist(promptId);
+        if (!promptData) {
+            res.status(400).json({ message: 'Prompt doesn\'t exit!' });
             return;
         }
 
-        const config: Partial<ISendRequestConfig> = {
-            model: undefined,
-            provider: undefined,
-            maxTokens: req?.body?.maxTokens || DEFAULT_MAX_TOKENS,
-        };
-
-        const body = req.body;
-        for (const provider in aiProvidersModels) {
-            const parsedProvider = provider as keyof TProvidersModels;
-
-            const aiModel = aiProvidersModels[parsedProvider];
-            const hasModel = aiModel.find(m => m.name === body.model);
-            if (hasModel?.name) {
-                config.model = hasModel.name;
-                config.provider = parsedProvider;
-            }
+        const isOwnerOnPrompt = await verifyOwnerOnPrompt(promptId, req?.user?.userId ?? '');
+        if (!isOwnerOnPrompt) {
+            res.status(400).json({ message: 'You are not a owner' })
+            return;
         }
 
-        if (!config.model || !config.provider) {
+        const body = req.body;
+        const aiConfig = mapModelToProviderConfig(promptData.promptModel, body.maxTokens);
+
+        if (!aiConfig.model || !aiConfig.provider) {
             res.status(400).json({ message: 'Model doesn\'t found' });
             return;
         };
-        const response = await sendAiRequestToProvider(config as ISendRequestConfig, body);
+
+        const response = await sendAiRequestToProvider(aiConfig, body);
 
         res.status(200).json(response);
     } catch (error) {
@@ -57,7 +51,16 @@ export const sendRequest = async (req: Request, res: Response, next: NextFunctio
 
 export const createUserPrompt = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const result = await createPrompt(req.body);
+        const body = req.body;
+
+        const aiConfig = mapModelToProviderConfig(body.model, body.maxTokens);
+        if (!aiConfig.model || !aiConfig.provider) {
+            res.status(400).json({ message: 'This model doesn\'t supported' });
+            return;
+        }
+
+        const promptName = body.promptName;
+        const result = await createPrompt(aiConfig, promptName, req?.user?.userId ?? '');
         if (result.status !== 200) {
             res.status(400).json({ message: 'Incorrect' });
             return;

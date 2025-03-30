@@ -19,11 +19,12 @@ const PROMPT_ROLE = {
 };
 
 export const verifyPromptExist = async (promptId: string) => {
-    const isPromptExist = await db.Prompt.findOne({ where: { id: promptId } });
-    if (!isPromptExist) {
-        return false;
-    }
-    return true;
+    const promptData = await db.Prompt.findOne({
+        where: { id: promptId, isDeleted: false },
+        raw: true,
+        nest: true,
+    });
+    return promptData;
 };
 
 interface IMessageResponse extends IPromptMessageAttributes {
@@ -81,15 +82,15 @@ export const sendAiRequestToProvider = async (data: ISendRequestConfig, body: Re
     }
 };
 
-export const createPrompt = async (body: Request['body']) => {
+export const createPrompt = async (aiConfig: ISendRequestConfig, promptName: string, userId: string) => {
     // Create Prompt
-    const createPromptResult = await db.Prompt.create({ name: body.promptName });
+    const createPromptResult = await db.Prompt.create({ name: promptName, promptModel: aiConfig.model });
     const promptId = createPromptResult.dataValues.id;
 
     // Create record in PromptCost table
     await db.PromptCost.create({ promptId, totalInputCost: 0, totalOutputCost: 0 });
 
-    await db.UserPrompt.create({ userId: body.userId, promptId });
+    await db.UserPrompt.create({ userId: userId, promptId });
 
     return { status: 200, promptData: { promptId } };
 };
@@ -99,7 +100,7 @@ interface IAllPrompts extends IUserPromptAttributes {
 }
 export const getAllPrompts = async (userId: string) => {
     const result: IAllPrompts[] = await db.UserPrompt.findAll({
-        where: { userId },
+        where: { userId, isDeleted: false, isEnabled: true },
         include: [
             {
                 model: db.Prompt,
@@ -114,3 +115,12 @@ export const getAllPrompts = async (userId: string) => {
     const filterResult = result.map(pr => pr.Prompt);
     return filterResult;
 };
+
+export const verifyOwnerOnPrompt = async (promptId: string, userId: string) => {
+    const result = await db.UserPrompt.findOne({
+        where: { promptId, userId },
+        raw: true,
+        nest: true,
+    });
+    return result;
+}
